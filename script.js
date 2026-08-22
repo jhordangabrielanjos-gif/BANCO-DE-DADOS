@@ -1,4 +1,4 @@
-const API_URL = "https://banco-de-dados-1-c5ek.onrender.com/";
+const API_URL = "https://banco-de-dados-1-c5ek.onrender.com";
 
 let usuarioEditando = null;
 
@@ -53,7 +53,7 @@ async function carregarUsuarios() {
         lista.innerHTML = `
             <p style="color:red;">
                 Erro ao conectar com a API.<br>
-                Verifique se o servidor está rodando em http://localhost:3000
+                Verifique se o servidor está online no render
             </p>
         `;
     }
