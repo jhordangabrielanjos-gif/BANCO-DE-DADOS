@@ -170,11 +170,5 @@ app.delete("/usuarios/:id", (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-
-    console.log("--------------------------------");
-    console.log("API funcionando!");
-    console.log(`Servidor: http://localhost:${PORT}`);
-    console.log(`Usuários: http://localhost:${PORT}/usuarios`);
-    console.log("--------------------------------");
-
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
