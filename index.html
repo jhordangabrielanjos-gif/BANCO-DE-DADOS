@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Banco de Usuários</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Banco de Usuários</h1>
+
+        <!-- FORMULÁRIO -->
+        <div class="card">
+
+            <h2 id="titulo-form">Cadastrar usuário</h2>
+
+            <form id="formUsuario">
+
+                <input
+                    type="text"
+                    id="nome"
+                    placeholder="Nome"
+                    required
+                >
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Email"
+                    required
+                >
+
+                <input
+                    type="number"
+                    id="idade"
+                    placeholder="Idade"
+                    min="1"
+                    required
+                >
+
+                <button type="submit" id="btnSalvar">
+                    Cadastrar
+                </button>
+
+                <button
+                    type="button"
+                    id="btnCancelar"
+                    class="cancelar"
+                    onclick="cancelarEdicao()"
+                    style="display: none;"
+                >
+                    Cancelar
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- LISTA DE USUÁRIOS -->
+        <div class="card">
+
+            <h2>Usuários cadastrados</h2>
+
+            <div class="tabela-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Idade</th>
+                            <th>Ações</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="listaUsuarios">
+
+                        <tr>
+                            <td colspan="5">
+                                Carregando usuários...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>
