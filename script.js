@@ -1,6 +1,7 @@
 const API_URL = "https://banco-de-dados-2-0atp.onrender.com";
 
 let usuarioEditando = null;
+let usuariosCarregados = [];
 
 
 // ========================================
@@ -11,38 +12,32 @@ async function carregarUsuarios() {
 
     const lista = document.getElementById("listaUsuarios");
 
+    if (!lista) {
+        console.error("Elemento #listaUsuarios não encontrado.");
+        return;
+    }
+
     try {
 
         console.log("Conectando à API...");
 
-        const resposta = await fetch(
-            `${API_URL}/usuarios`
-        );
+        const resposta = await fetch(`${API_URL}/usuarios`);
 
-        console.log(
-            "Status da API:",
-            resposta.status
-        );
+        console.log("Status da API:", resposta.status);
 
         if (!resposta.ok) {
-
-            throw new Error(
-                "Erro HTTP: " + resposta.status
-            );
-
+            throw new Error("Erro HTTP: " + resposta.status);
         }
 
         const usuarios = await resposta.json();
 
-        console.log(
-            "Usuários:",
-            usuarios
-        );
+        console.log("Usuários recebidos:", usuarios);
+
+        usuariosCarregados = usuarios;
 
         lista.innerHTML = "";
 
-
-        if (usuarios.length === 0) {
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
 
             lista.innerHTML = `
                 <tr>
@@ -58,51 +53,89 @@ async function carregarUsuarios() {
 
         usuarios.forEach(usuario => {
 
-            const linha =
-                document.createElement("tr");
+            const linha = document.createElement("tr");
 
 
-            linha.innerHTML = `
+            // ID
+            const tdId = document.createElement("td");
+            tdId.textContent = usuario.id;
+            linha.appendChild(tdId);
 
-                <td>
-                    ${usuario.id}
-                </td>
 
-                <td>
-                    ${usuario.nome}
-                </td>
+            // NOME
+            const tdNome = document.createElement("td");
+            tdNome.textContent = usuario.nome;
+            linha.appendChild(tdNome);
 
-                <td>
-                    R$ ${Number(usuario.VALOR).toFixed(2)}
-                </td>
 
-                <td>
-                    ${usuario.HRDOBABA}
-                </td>
+            // VALOR
+            const tdValor = document.createElement("td");
 
-                <td>
+            const valorNumerico = Number(usuario.VALOR);
 
-                    <button
-                        onclick="editarUsuario(
-                            ${usuario.id},
-                            ${JSON.stringify(usuario.nome)},
-                            ${JSON.stringify(usuario.VALOR)},
-                            ${JSON.stringify(usuario.HRDOBABA)}
-                        )"
-                    >
-                        Editar
-                    </button>
+            tdValor.textContent =
+                "R$ " +
+                (Number.isNaN(valorNumerico)
+                    ? "0.00"
+                    : valorNumerico.toFixed(2));
 
-                    <button
-                        onclick="excluirUsuario(${usuario.id})"
-                    >
-                        Excluir
-                    </button>
+            linha.appendChild(tdValor);
 
-                </td>
 
-            `;
+            // HORÁRIO
+            const tdHora = document.createElement("td");
+            tdHora.textContent = usuario.HRDOBABA || "";
+            linha.appendChild(tdHora);
 
+
+            // BOTÕES
+            const tdBotoes = document.createElement("td");
+
+
+            // BOTÃO EDITAR
+            const botaoEditar =
+                document.createElement("button");
+
+            botaoEditar.type = "button";
+            botaoEditar.textContent = "Editar";
+
+            botaoEditar.addEventListener(
+                "click",
+                function () {
+
+                    editarUsuario(usuario.id);
+
+                }
+            );
+
+
+            // BOTÃO EXCLUIR
+            const botaoExcluir =
+                document.createElement("button");
+
+            botaoExcluir.type = "button";
+            botaoExcluir.textContent = "Excluir";
+
+            botaoExcluir.addEventListener(
+                "click",
+                function () {
+
+                    excluirUsuario(usuario.id);
+
+                }
+            );
+
+
+            tdBotoes.appendChild(botaoEditar);
+
+            tdBotoes.appendChild(
+                document.createTextNode(" ")
+            );
+
+            tdBotoes.appendChild(botaoExcluir);
+
+
+            linha.appendChild(tdBotoes);
 
             lista.appendChild(linha);
 
@@ -111,27 +144,17 @@ async function carregarUsuarios() {
 
     } catch (erro) {
 
-        console.error(
-            "ERRO NA API:",
-            erro
-        );
-
+        console.error("ERRO NA API:", erro);
 
         lista.innerHTML = `
-
             <tr>
-
                 <td
                     colspan="5"
                     style="color:red;"
                 >
-
                     Erro ao conectar com a API.
-
                 </td>
-
             </tr>
-
         `;
 
     }
@@ -143,11 +166,15 @@ async function carregarUsuarios() {
 // CADASTRAR / EDITAR
 // ========================================
 
-document
-    .getElementById("formUsuario")
-    .addEventListener(
+const formUsuario =
+    document.getElementById("formUsuario");
+
+
+if (formUsuario) {
+
+    formUsuario.addEventListener(
         "submit",
-        async function(event) {
+        async function (event) {
 
             event.preventDefault();
 
@@ -211,10 +238,7 @@ document
             };
 
 
-            console.log(
-                "Enviando:",
-                dados
-            );
+            console.log("Enviando:", dados);
 
 
             try {
@@ -222,14 +246,15 @@ document
                 let resposta;
 
 
+                // ====================================
                 // CADASTRAR
+                // ====================================
 
                 if (usuarioEditando === null) {
 
                     resposta = await fetch(
                         `${API_URL}/usuarios`,
                         {
-
                             method: "POST",
 
                             headers: {
@@ -239,21 +264,27 @@ document
 
                             body:
                                 JSON.stringify(dados)
-
                         }
                     );
 
                 }
 
 
+                // ====================================
                 // EDITAR
+                // ====================================
 
                 else {
+
+                    console.log(
+                        "Editando usuário ID:",
+                        usuarioEditando
+                    );
+
 
                     resposta = await fetch(
                         `${API_URL}/usuarios/${usuarioEditando}`,
                         {
-
                             method: "PUT",
 
                             headers: {
@@ -263,7 +294,6 @@ document
 
                             body:
                                 JSON.stringify(dados)
-
                         }
                     );
 
@@ -275,7 +305,7 @@ document
 
 
                 console.log(
-                    "Resposta:",
+                    "Resposta da API:",
                     resultado
                 );
 
@@ -315,6 +345,7 @@ document
             } catch (erro) {
 
                 console.error(
+                    "Erro ao salvar:",
                     erro
                 );
 
@@ -327,58 +358,158 @@ document
         }
     );
 
+}
+
 
 // ========================================
 // EDITAR
 // ========================================
 
-function editarUsuario(
-    id,
-    nome,
-    valor,
-    horaBaba
-) {
+function editarUsuario(id) {
 
-    usuarioEditando = id;
+    console.log(
+        "Clicou em editar. ID:",
+        id
+    );
 
 
-    document
-        .getElementById("nome")
-        .value = nome;
+    // Procura o usuário que foi clicado
+    const usuario =
+        usuariosCarregados.find(
+            function (item) {
+
+                return Number(item.id) === Number(id);
+
+            }
+        );
 
 
-    document
-        .getElementById("VALOR")
-        .value = valor;
+    if (!usuario) {
+
+        console.error(
+            "Usuário não encontrado:",
+            id
+        );
+
+        alert(
+            "Não foi possível encontrar esse usuário."
+        );
+
+        return;
+
+    }
 
 
-    document
-        .getElementById("HRDOBABA")
-        .value = horaBaba;
+    console.log(
+        "Usuário selecionado:",
+        usuario
+    );
 
 
-    document
-        .getElementById("titulo-form")
-        .textContent =
-        "EDITAR QUEM VAI?";
+    usuarioEditando = usuario.id;
 
 
-    document
-        .getElementById("btnSalvar")
-        .textContent =
-        "Salvar alterações";
+    // ====================================
+    // PREENCHER NOME
+    // ====================================
+
+    const campoNome =
+        document.getElementById("nome");
+
+    if (campoNome) {
+
+        campoNome.value =
+            usuario.nome || "";
+
+    }
 
 
-    document
-        .getElementById("btnCancelar")
-        .style.display =
-        "inline-block";
+    // ====================================
+    // PREENCHER VALOR
+    // ====================================
+
+    const campoValor =
+        document.getElementById("VALOR");
+
+    if (campoValor) {
+
+        campoValor.value =
+            usuario.VALOR ?? "";
+
+    }
+
+
+    // ====================================
+    // PREENCHER HORÁRIO
+    // ====================================
+
+    const campoHora =
+        document.getElementById("HRDOBABA");
+
+    if (campoHora) {
+
+        campoHora.value =
+            usuario.HRDOBABA || "";
+
+    }
+
+
+    // ====================================
+    // ALTERAR TÍTULO
+    // ====================================
+
+    const titulo =
+        document.getElementById("titulo-form");
+
+    if (titulo) {
+
+        titulo.textContent =
+            "EDITAR QUEM VAI?";
+
+    }
+
+
+    // ====================================
+    // ALTERAR BOTÃO SALVAR
+    // ====================================
+
+    const btnSalvar =
+        document.getElementById("btnSalvar");
+
+    if (btnSalvar) {
+
+        btnSalvar.textContent =
+            "Salvar alterações";
+
+    }
+
+
+    // ====================================
+    // MOSTRAR CANCELAR
+    // ====================================
+
+    const btnCancelar =
+        document.getElementById("btnCancelar");
+
+    if (btnCancelar) {
+
+        btnCancelar.style.display =
+            "inline-block";
+
+    }
+
+
+    // Coloca o usuário no início da tela
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
 }
 
 
 // ========================================
-// CANCELAR
+// CANCELAR EDIÇÃO
 // ========================================
 
 function cancelarEdicao() {
@@ -386,27 +517,47 @@ function cancelarEdicao() {
     usuarioEditando = null;
 
 
-    document
-        .getElementById("formUsuario")
-        .reset();
+    const form =
+        document.getElementById("formUsuario");
+
+    if (form) {
+
+        form.reset();
+
+    }
 
 
-    document
-        .getElementById("titulo-form")
-        .textContent =
-        "QUEM VAI?";
+    const titulo =
+        document.getElementById("titulo-form");
+
+    if (titulo) {
+
+        titulo.textContent =
+            "QUEM VAI?";
+
+    }
 
 
-    document
-        .getElementById("btnSalvar")
-        .textContent =
-        "Cadastrar";
+    const btnSalvar =
+        document.getElementById("btnSalvar");
+
+    if (btnSalvar) {
+
+        btnSalvar.textContent =
+            "Cadastrar";
+
+    }
 
 
-    document
-        .getElementById("btnCancelar")
-        .style.display =
-        "none";
+    const btnCancelar =
+        document.getElementById("btnCancelar");
+
+    if (btnCancelar) {
+
+        btnCancelar.style.display =
+            "none";
+
+    }
 
 }
 
@@ -430,6 +581,12 @@ async function excluirUsuario(id) {
 
     try {
 
+        console.log(
+            "Excluindo usuário:",
+            id
+        );
+
+
         const resposta =
             await fetch(
                 `${API_URL}/usuarios/${id}`,
@@ -441,6 +598,12 @@ async function excluirUsuario(id) {
 
         const resultado =
             await resposta.json();
+
+
+        console.log(
+            "Resposta da exclusão:",
+            resultado
+        );
 
 
         if (!resposta.ok) {
@@ -466,6 +629,7 @@ async function excluirUsuario(id) {
     } catch (erro) {
 
         console.error(
+            "Erro ao excluir:",
             erro
         );
 
@@ -479,7 +643,14 @@ async function excluirUsuario(id) {
 
 
 // ========================================
-// INICIAR
+// INICIAR SISTEMA
 // ========================================
 
-carregarUsuarios();
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        carregarUsuarios();
+
+    }
+);
