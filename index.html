@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Baba dos Guri</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>BABA DOS GURI</h1>
+
+        <div class="card">
+
+            <h2 id="titulo-form">QUEM VAI?</h2>
+
+            <form id="formUsuario">
+
+                <input
+                    type="text"
+                    id="nome"
+                    placeholder="NOME"
+                    required
+                >
+
+                <input
+                    type="number"
+                    id="VALOR"
+                    placeholder="VALOR"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+
+                <input
+                    type="text"
+                    id="HRDOBABA"
+                    placeholder="HR DO BABA"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    id="btnSalvar"
+                >
+                    Cadastrar
+                </button>
+
+                <button
+                    type="button"
+                    id="btnCancelar"
+                    class="cancelar"
+                    onclick="cancelarEdicao()"
+                    style="display: none;"
+                >
+                    Cancelar
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>OS QUE VÃO?</h2>
+
+            <div class="tabela-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>NOME</th>
+                            <th>VALOR</th>
+                            <th>HR DO BABA</th>
+                            <th>AÇÕES</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="listaUsuarios">
+
+                        <tr>
+                            <td colspan="5">
+                                Carregando usuários...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
