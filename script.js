@@ -1,4 +1,4 @@
-const API_URL = "https://banco-de-dados-1-c5ek.onrender.com";
+const API_URL = "https://banco-de-dados-2-0atp.onrender.com";
 
 let usuarioEditando = null;
 
