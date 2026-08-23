@@ -6,47 +6,97 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurações
+// ==============================
+// CONFIGURAÇÕES
+// ==============================
 app.use(cors());
 app.use(express.json());
 
-// Banco de dados
+
+// ==============================
+// BANCO DE DADOS
+// ==============================
 const dbPath = path.join(__dirname, "banco.db");
 
 const db = new sqlite3.Database(dbPath, (err) => {
+
     if (err) {
         console.error("Erro ao conectar ao banco:", err.message);
     } else {
         console.log("Banco conectado com sucesso!");
     }
-});
-
-// Criar tabela
-db.run(`
-    CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        idade INTEGER
-    )
-`, (err) => {
-
-    if (err) {
-        console.error("Erro ao criar tabela:", err.message);
-    } else {
-        console.log("Tabela usuarios pronta!");
-    }
 
 });
 
-// Página inicial
+
+// ==============================
+// CRIAR / ATUALIZAR TABELA
+// ==============================
+db.serialize(() => {
+
+    db.all(
+        "PRAGMA table_info(usuarios)",
+        [],
+        (err, colunas) => {
+
+            if (err) {
+                console.error("Erro ao verificar tabela:", err.message);
+                return;
+            }
+
+
+            // Se a tabela não existir
+            if (colunas.length === 0) {
+
+                db.run(`
+                    CREATE TABLE usuarios (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nome TEXT NOT NULL,
+                        VALOR REAL NOT NULL,
+                        HRDOBABA TEXT NOT NULL
+                    )
+                `, (err) => {
+
+                    if (err) {
+                        console.error(
+                            "Erro ao criar tabela:",
+                            err.message
+                        );
+                    } else {
+                        console.log(
+                            "Tabela usuarios criada!"
+                        );
+                    }
+
+                });
+
+                return;
+            }
+
+
+            console.log("Tabela usuarios já existe.");
+
+        }
+    );
+
+});
+
+
+// ==============================
+// PÁGINA INICIAL
+// ==============================
 app.get("/", (req, res) => {
+
     res.json({
         mensagem: "API funcionando!"
     });
+
 });
 
-// Listar usuários
+
+// ==============================
+// LISTAR USUÁRIOS
+// ==============================
 app.get("/usuarios", (req, res) => {
 
     db.all(
@@ -55,93 +105,155 @@ app.get("/usuarios", (req, res) => {
         (err, usuarios) => {
 
             if (err) {
+
                 return res.status(500).json({
                     erro: err.message
                 });
+
             }
 
             res.json(usuarios);
+
         }
     );
 
 });
 
-// Cadastrar usuário
+
+// ==============================
+// CADASTRAR USUÁRIO
+// ==============================
 app.post("/usuarios", (req, res) => {
 
-    const { nome, email, idade } = req.body;
+    const {
+        nome,
+        VALOR,
+        HRDOBABA
+    } = req.body;
 
-    if (!nome || !email) {
+
+    if (!nome || VALOR === undefined || !HRDOBABA) {
+
         return res.status(400).json({
-            erro: "Nome e email são obrigatórios."
+            erro: "Nome, VALOR e HR DO BABA são obrigatórios."
         });
+
     }
 
+
     db.run(
-        `INSERT INTO usuarios (nome, email, idade)
-         VALUES (?, ?, ?)`,
-        [nome, email, idade || null],
+        `
+        INSERT INTO usuarios
+        (nome, VALOR, HRDOBABA)
+        VALUES (?, ?, ?)
+        `,
+        [
+            nome,
+            Number(VALOR),
+            HRDOBABA
+        ],
         function (err) {
 
             if (err) {
 
-                if (err.message.includes("UNIQUE")) {
-                    return res.status(400).json({
-                        erro: "Este email já está cadastrado."
-                    });
-                }
+                console.error(err.message);
 
                 return res.status(500).json({
                     erro: err.message
                 });
+
             }
 
+
             res.status(201).json({
+
                 mensagem: "Usuário cadastrado!",
+
                 id: this.lastID
+
             });
+
         }
     );
 
 });
 
-// Editar usuário
+
+// ==============================
+// EDITAR USUÁRIO
+// ==============================
 app.put("/usuarios/:id", (req, res) => {
 
     const id = req.params.id;
-    const { nome, email, idade } = req.body;
+
+    const {
+        nome,
+        VALOR,
+        HRDOBABA
+    } = req.body;
+
+
+    if (!nome || VALOR === undefined || !HRDOBABA) {
+
+        return res.status(400).json({
+            erro: "Nome, VALOR e HR DO BABA são obrigatórios."
+        });
+
+    }
+
 
     db.run(
-        `UPDATE usuarios
-         SET nome = ?, email = ?, idade = ?
-         WHERE id = ?`,
-        [nome, email, idade || null, id],
+        `
+        UPDATE usuarios
+        SET
+            nome = ?,
+            VALOR = ?,
+            HRDOBABA = ?
+        WHERE id = ?
+        `,
+        [
+            nome,
+            Number(VALOR),
+            HRDOBABA,
+            id
+        ],
         function (err) {
 
             if (err) {
+
                 return res.status(500).json({
                     erro: err.message
                 });
+
             }
 
+
             if (this.changes === 0) {
+
                 return res.status(404).json({
                     erro: "Usuário não encontrado."
                 });
+
             }
+
 
             res.json({
                 mensagem: "Usuário atualizado!"
             });
+
         }
     );
 
 });
 
-// Excluir usuário
+
+// ==============================
+// EXCLUIR USUÁRIO
+// ==============================
 app.delete("/usuarios/:id", (req, res) => {
 
     const id = req.params.id;
+
 
     db.run(
         "DELETE FROM usuarios WHERE id = ?",
@@ -149,26 +261,40 @@ app.delete("/usuarios/:id", (req, res) => {
         function (err) {
 
             if (err) {
+
                 return res.status(500).json({
                     erro: err.message
                 });
+
             }
 
+
             if (this.changes === 0) {
+
                 return res.status(404).json({
                     erro: "Usuário não encontrado."
                 });
+
             }
+
 
             res.json({
                 mensagem: "Usuário excluído!"
             });
+
         }
     );
 
 });
 
-// Iniciar servidor
+
+// ==============================
+// INICIAR SERVIDOR
+// ==============================
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+
+    console.log(
+        `Servidor rodando na porta ${PORT}`
+    );
+
 });
