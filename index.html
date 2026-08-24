@@ -5,105 +5,615 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Baba dos Guri</title>
+    <title>Meu Restaurante</title>
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div class="container">
+    <!-- =========================================
+         HEADER
+    ========================================== -->
 
-        <h1>BABA DOS GURI</h1>
+    <header class="header">
 
-        <div class="card">
+        <div class="header-conteudo">
 
-            <h2 id="titulo-form">QUEM VAI?</h2>
+            <div class="logo">
 
-            <form id="formUsuario">
+                <div class="logo-icone">
+                    🍽️
+                </div>
+
+                <div>
+                    <h1>Meu Restaurante</h1>
+                    <span>Cardápio online</span>
+                </div>
+
+            </div>
+
+            <button
+                id="abrirFormulario"
+                class="btn-novo"
+            >
+                ➕ Novo prato
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         CONTEÚDO
+    ========================================== -->
+
+    <main class="container">
+
+        <!-- HERO -->
+
+        <section class="hero">
+
+            <div>
+
+                <span class="hero-tag">
+                    🍴 Faça seu pedido
+                </span>
+
+                <h2>
+                    Nosso <span>Cardápio</span>
+                </h2>
+
+                <p>
+                    Escolha seus pratos favoritos e monte seu pedido.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             PESQUISA
+        ====================================== -->
+
+        <section class="filtros">
+
+            <div class="pesquisa">
+
+                <span>🔎</span>
 
                 <input
                     type="text"
-                    id="nome"
-                    placeholder="NOME"
-                    required
+                    id="pesquisa"
+                    placeholder="Pesquisar prato..."
                 >
 
-                <input
-                    type="number"
-                    id="VALOR"
-                    placeholder="VALOR"
-                    min="0"
-                    step="0.01"
-                    required
-                >
+            </div>
 
-                <input
-                    type="text"
-                    id="HRDOBABA"
-                    placeholder="HR DO BABA"
-                    required
-                >
+            <div
+                id="categorias"
+                class="categorias">
 
-                <button
-                    type="submit"
-                    id="btnSalvar"
-                >
-                    Cadastrar
+                 <button class="categoria ativa" data-categoria="Todos">
+                 🍽️ Todos
                 </button>
 
-                <button
-                    type="button"
-                    id="btnCancelar"
-                    class="cancelar"
-                    onclick="cancelarEdicao()"
-                    style="display: none;"
-                >
-                    Cancelar
+                  <button class="categoria" data-categoria="Hambúrgueres">
+                 🍔 Hambúrgueres
                 </button>
 
-            </form>
+                 <button class="categoria" data-categoria="Pizzas">
+                 🍕 Pizzas
+                </button>
+
+                 <button class="categoria" data-categoria="Porções">
+                 🍟 Porções
+                </button>
+                
+                 <button class="categoria" data-categoria="Cachorros-quentes">
+                 🌭 Cachorros-quentes
+                 </button>
+
+                <button class="categoria" data-categoria="Frangos">
+                 🍗 Frangos
+                </button>
+                <button class="categoria" data-categoria="Carnes">
+                 🥩 Carnes
+                </button>
+
+                <button class="categoria" data-categoria="Massas">
+                 🍝 Massas
+                </button>
+                <button class="categoria" data-categoria="Saladas">
+                 🥗 Saladas
+                </button>
+ 
+                 <button class="categoria" data-categoria="Pratos Executivos">
+         🍛 Pratos Executivos
+    </button>
+
+    <button class="categoria" data-categoria="Lanches">
+        🥪 Lanches
+    </button>
+
+    <button class="categoria" data-categoria="Sobremesas">
+        🍰 Sobremesas
+    </button>
+
+    <button class="categoria" data-categoria="Bebidas">
+        🥤 Bebidas
+    </button>
+
+    <button class="categoria" data-categoria="Açaí">
+        🍨 Açaí
+    </button>
+
+    <button class="categoria" data-categoria="Cafés">
+        ☕ Cafés
+    </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- CONTADOR -->
+
+        <div class="resultado">
+
+            <span id="contador">
+                Carregando pratos...
+            </span>
 
         </div>
 
 
-        <div class="card">
+        <!-- =====================================
+             PRATOS
+        ====================================== -->
 
-            <h2>OS QUE VÃO?</h2>
+        <section
+            id="listaPratos"
+            class="lista-pratos">
+        </section>
 
-            <div class="tabela-container">
+    </main>
 
-                <table>
 
-                    <thead>
+    <!-- =========================================
+         BOTÃO FLUTUANTE DO CARRINHO
+    ========================================== -->
 
-                        <tr>
-                            <th>ID</th>
-                            <th>NOME</th>
-                            <th>VALOR</th>
-                            <th>HR DO BABA</th>
-                            <th>AÇÕES</th>
-                        </tr>
+    <button
+        id="abrirCarrinho"
+        class="botao-carrinho"
+        type="button"
+    >
 
-                    </thead>
+        <span class="icone-carrinho">
+            🛒
+        </span>
 
-                    <tbody id="listaUsuarios">
+        <span>
+            Meu pedido
+        </span>
 
-                        <tr>
-                            <td colspan="5">
-                                Carregando usuários...
-                            </td>
-                        </tr>
+        <strong id="contadorCarrinho">
+            0
+        </strong>
 
-                    </tbody>
+    </button>
 
-                </table>
+
+    <!-- =========================================
+         OVERLAY DO CARRINHO
+    ========================================== -->
+
+    <div
+        id="overlayCarrinho"
+        class="overlay-carrinho">
+    </div>
+
+
+    <!-- =========================================
+         CARRINHO
+    ========================================== -->
+
+    <aside
+        id="carrinho"
+        class="carrinho"
+    >
+
+        <div class="carrinho-header">
+
+            <div class="carrinho-titulo">
+
+                <span class="carrinho-icone">
+                    🛒
+                </span>
+
+                <div>
+
+                    <h2>
+                        Meu pedido
+                    </h2>
+
+                    <small>
+                        Confira seus itens
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <button
+                id="fecharCarrinho"
+                class="fechar-carrinho"
+                type="button"
+            >
+                ✕
+            </button>
+
+        </div>
+
+
+        <!-- LISTA -->
+
+        <div
+            id="listaCarrinho"
+            class="lista-carrinho"
+        >
+
+            <div
+                id="carrinhoVazio"
+                class="carrinho-vazio"
+            >
+
+                <div class="icone-vazio">
+                    🛒
+                </div>
+
+                <h3>
+                    Seu carrinho está vazio
+                </h3>
+
+                <p>
+                    Adicione pratos para começar seu pedido.
+                </p>
+
+                <button
+                    id="continuarComprando"
+                    class="botao-continuar"
+                    type="button"
+                >
+                    Ver cardápio
+                </button>
 
             </div>
 
         </div>
 
+
+        <!-- FOOTER -->
+
+        <div class="carrinho-footer">
+
+            <div class="linha-total">
+
+                <span>
+                    Total
+                </span>
+
+                <strong id="totalCarrinho">
+                    R$ 0,00
+                </strong>
+
+            </div>
+
+
+            <button
+                id="finalizarPedido"
+                class="botao-whatsapp"
+                type="button"
+                disabled
+            >
+                📱 Finalizar pelo WhatsApp
+            </button>
+
+
+            <button
+                id="limparCarrinho"
+                class="botao-limpar"
+                type="button"
+            >
+                🗑️ Limpar pedido
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================================
+         MODAL NOVO / EDITAR PRATO
+    ========================================== -->
+
+    <div
+        id="modal"
+        class="modal"
+    >
+
+        <div class="modal-conteudo">
+
+            <button
+                id="fecharModal"
+                class="fechar"
+                type="button"
+            >
+                ✕
+            </button>
+
+
+            <div class="modal-header">
+
+                <span>
+                    🍽️
+                </span>
+
+                <div>
+
+                    <h2 id="tituloFormulario">
+                        Novo prato
+                    </h2>
+
+                    <p>
+                        Cadastre as informações do prato.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="formPrato">
+
+                <div class="campo">
+
+                    <label for="nome">
+                        Nome do prato
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nome"
+                        placeholder="Ex: Hambúrguer artesanal"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="descricao">
+                        Descrição
+                    </label>
+
+                    <textarea
+                        id="descricao"
+                        placeholder="Descreva o prato..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <div class="campo">
+
+                        <label for="preco">
+                            Preço
+                        </label>
+
+                        <div class="input-preco">
+
+                            <span>
+                                R$
+                            </span>
+
+                            <input
+                                type="number"
+                                id="preco"
+                                step="0.01"
+                                min="0"
+                                placeholder="0,00"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                <div class="campo">
+
+    <label for="categoria">
+        Categoria
+    </label>
+
+    <select
+        id="categoria"
+        required
+    >
+
+        <option value="">
+            Selecione uma categoria
+        </option>
+
+        <option value="Hambúrgueres">
+            🍔 Hambúrgueres
+        </option>
+
+        <option value="Pizzas">
+            🍕 Pizzas
+        </option>
+
+        <option value="Porções">
+            🍟 Porções
+        </option>
+
+        <option value="Cachorros-quentes">
+            🌭 Cachorros-quentes
+        </option>
+
+        <option value="Frangos">
+            🍗 Frangos
+        </option>
+
+        <option value="Carnes">
+            🥩 Carnes
+        </option>
+
+        <option value="Massas">
+            🍝 Massas
+        </option>
+
+        <option value="Saladas">
+            🥗 Saladas
+        </option>
+
+        <option value="Pratos Executivos">
+            🍛 Pratos Executivos
+        </option>
+
+        <option value="Lanches">
+            🥪 Lanches
+        </option>
+
+        <option value="Sobremesas">
+            🍰 Sobremesas
+        </option>
+
+        <option value="Bebidas">
+            🥤 Bebidas
+        </option>
+
+        <option value="Açaí">
+            🍨 Açaí
+        </option>
+
+        <option value="Cafés">
+            ☕ Cafés
+        </option>
+
+    </select>
+
+</div>
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label>
+                        Imagem do prato
+                    </label>
+
+                    <label
+                        for="imagem"
+                        class="btn-escolher-imagem"
+                    >
+
+                        <span class="upload-icone">
+                            🖼️
+                        </span>
+
+                        <span class="upload-texto">
+
+                            <strong>
+                                Escolher imagem
+                            </strong>
+
+                            <small>
+                                JPG, PNG ou WEBP — máximo 5 MB
+                            </small>
+
+                        </span>
+
+                        <span class="upload-seta">
+                            →
+                        </span>
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="imagem"
+                        accept="image/*"
+                        hidden
+                    >
+
+                </div>
+
+
+                <div
+                    id="preview"
+                    class="preview"
+                >
+
+                    <span>
+                        🖼️
+                    </span>
+
+                    <p>
+                        A imagem aparecerá aqui
+                    </p>
+
+                </div>
+
+
+                <div class="botoes-form">
+
+                    <button
+                        type="button"
+                        id="cancelarFormulario"
+                        class="btn-cancelar"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-salvar"
+                    >
+
+                        <span id="textoBotao">
+                            Cadastrar prato
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
+
+
+    <!-- =========================================
+         TOAST
+    ========================================== -->
+
+    <div
+        id="toast"
+        class="toast"
+    ></div>
+
 
     <script src="script.js"></script>
 
