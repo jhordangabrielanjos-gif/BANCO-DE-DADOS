@@ -1,1198 +1,164 @@
-const API_URL = "";
+const API_URL = "https://banco-de-dados-2-0atp.onrender.com";
 
-const WHATSAPP = "5579981021378";
-
-// ========================================
-// VARIÁVEIS
-// ========================================
-
-let pratos = [];
-let categoriaAtual = "Todos";
-let pratoEditando = null;
-let imagemAtual = "";
-
-let carrinho = JSON.parse(
-    localStorage.getItem("carrinhoRestaurante")
-) || [];
+let usuarioEditando = null;
+let usuariosCarregados = [];
 
 
 // ========================================
-// ELEMENTOS
+// CARREGAR USUÁRIOS
 // ========================================
 
-const listaPratos = document.getElementById("listaPratos");
-const contador = document.getElementById("contador");
-const pesquisa = document.getElementById("pesquisa");
-const categorias = document.getElementById("categorias");
+async function carregarUsuarios() {
 
-// CARRINHO
+    const lista = document.getElementById("listaUsuarios");
 
-const abrirCarrinhoBtn = document.getElementById("abrirCarrinho");
-const fecharCarrinhoBtn = document.getElementById("fecharCarrinho");
-const overlayCarrinho = document.getElementById("overlayCarrinho");
-const carrinhoElemento = document.getElementById("carrinho");
-const listaCarrinho = document.getElementById("listaCarrinho");
-const contadorCarrinho = document.getElementById("contadorCarrinho");
-const totalCarrinho = document.getElementById("totalCarrinho");
-const finalizarPedido = document.getElementById("finalizarPedido");
-const limparCarrinhoBtn = document.getElementById("limparCarrinho");
-
-// MODAL
-
-const modal = document.getElementById("modal");
-const fecharModalBtn = document.getElementById("fecharModal");
-const cancelarFormulario = document.getElementById("cancelarFormulario");
-const form = document.getElementById("formPrato");
-
-const nome = document.getElementById("nome");
-const descricao = document.getElementById("descricao");
-const preco = document.getElementById("preco");
-const imagem = document.getElementById("imagem");
-const categoria = document.getElementById("categoria");
-const preview = document.getElementById("preview");
-
-const tituloFormulario =
-    document.getElementById("tituloFormulario");
-
-const textoBotao =
-    document.getElementById("textoBotao");
-
-const toast =
-    document.getElementById("toast");
-
-
-// ========================================
-// VERIFICAR ELEMENTOS
-// ========================================
-
-console.log("JavaScript carregado!");
-
-console.log("API:", API_URL);
-
-console.log("Carrinho:", abrirCarrinhoBtn);
-
-console.log("Novo prato:", document.getElementById("abrirFormulario"));
-
-
-// ========================================
-// FORMATAÇÃO
-// ========================================
-
-function formatarPreco(valor) {
-
-    return Number(valor).toLocaleString(
-        "pt-BR",
-        {
-            style: "currency",
-            currency: "BRL"
-        }
-    );
-}
-
-
-// ========================================
-// SEGURANÇA HTML
-// ========================================
-
-function escaparHTML(texto) {
-
-    return String(texto ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-// ========================================
-// TOAST
-// ========================================
-
-function mostrarToast(mensagem) {
-
-    if (!toast) return;
-
-    toast.textContent = mensagem;
-
-    toast.classList.add("mostrar");
-
-    clearTimeout(mostrarToast.timer);
-
-    mostrarToast.timer = setTimeout(() => {
-
-        toast.classList.remove("mostrar");
-
-    }, 3000);
-}
-
-
-// ========================================
-// ================= CARRINHO =============
-// ========================================
-
-// SALVAR
-
-function salvarCarrinho() {
-
-    localStorage.setItem(
-        "carrinhoRestaurante",
-        JSON.stringify(carrinho)
-    );
-}
-
-
-// CONTAGEM
-
-function quantidadeTotalCarrinho() {
-
-    return carrinho.reduce(
-        (total, item) => {
-
-            return total + Number(item.quantidade || 0);
-
-        },
-        0
-    );
-}
-
-
-// TOTAL
-
-function valorTotalCarrinho() {
-
-    return carrinho.reduce(
-        (total, item) => {
-
-            return total +
-                Number(item.preco || 0) *
-                Number(item.quantidade || 0);
-
-        },
-        0
-    );
-}
-
-
-// ========================================
-// ADICIONAR AO CARRINHO
-// ========================================
-
-function adicionarAoCarrinho(id) {
-
-    const prato = pratos.find(
-        item => Number(item.id) === Number(id)
-    );
-
-    if (!prato) {
-
-        mostrarToast("Prato não encontrado.");
-
+    if (!lista) {
+        console.error("Elemento #listaUsuarios não encontrado.");
         return;
     }
-
-
-    const existente = carrinho.find(
-        item => Number(item.id) === Number(id)
-    );
-
-
-    if (existente) {
-
-        existente.quantidade++;
-
-    } else {
-
-        carrinho.push({
-
-            id: prato.id,
-
-            nome: prato.nome,
-
-            preco: Number(prato.preco),
-
-            quantidade: 1
-
-        });
-    }
-
-
-    salvarCarrinho();
-
-    atualizarCarrinho();
-
-    mostrarToast(
-        `${prato.nome} foi adicionado ao pedido!`
-    );
-}
-
-
-// ========================================
-// AUMENTAR QUANTIDADE
-// ========================================
-
-function aumentarQuantidade(id) {
-
-    const item = carrinho.find(
-        produto => Number(produto.id) === Number(id)
-    );
-
-    if (!item) return;
-
-    item.quantidade++;
-
-    salvarCarrinho();
-
-    atualizarCarrinho();
-}
-
-
-// ========================================
-// DIMINUIR QUANTIDADE
-// ========================================
-
-function diminuirQuantidade(id) {
-
-    const item = carrinho.find(
-        produto => Number(produto.id) === Number(id)
-    );
-
-    if (!item) return;
-
-    item.quantidade--;
-
-
-    if (item.quantidade <= 0) {
-
-        carrinho = carrinho.filter(
-            produto =>
-                Number(produto.id) !== Number(id)
-        );
-    }
-
-
-    salvarCarrinho();
-
-    atualizarCarrinho();
-}
-
-
-// ========================================
-// ATUALIZAR CARRINHO
-// ========================================
-
-function atualizarCarrinho() {
-
-    const quantidade = quantidadeTotalCarrinho();
-
-    const total = valorTotalCarrinho();
-
-
-    contadorCarrinho.textContent = quantidade;
-
-    totalCarrinho.textContent = formatarPreco(total);
-
-    finalizarPedido.disabled =
-        carrinho.length === 0;
-
-
-    if (carrinho.length === 0) {
-
-        listaCarrinho.innerHTML = `
-
-            <div class="carrinho-vazio">
-
-                <div class="icone-vazio">
-                    🛒
-                </div>
-
-                <h3>
-                    Seu carrinho está vazio
-                </h3>
-
-                <p>
-                    Adicione pratos para começar seu pedido.
-                </p>
-
-                <button
-                    class="botao-continuar"
-                    type="button"
-                    onclick="fecharCarrinho()"
-                >
-                    Ver cardápio
-                </button>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    listaCarrinho.innerHTML = carrinho
-        .map(item => {
-
-            const subtotal =
-                Number(item.preco) *
-                Number(item.quantidade);
-
-
-            return `
-
-                <div class="item-carrinho">
-
-                    <div class="item-info">
-
-                        <h3>
-                            ${escaparHTML(item.nome)}
-                        </h3>
-
-                        <p>
-                            ${formatarPreco(item.preco)}
-                            cada
-                        </p>
-
-                    </div>
-
-
-                    <div class="item-direita">
-
-                        <div class="controle-quantidade">
-
-                            <button
-                                type="button"
-                                onclick="diminuirQuantidade(${item.id})"
-                            >
-                                −
-                            </button>
-
-                            <strong>
-                                ${item.quantidade}
-                            </strong>
-
-                            <button
-                                type="button"
-                                onclick="aumentarQuantidade(${item.id})"
-                            >
-                                +
-                            </button>
-
-                        </div>
-
-
-                        <strong class="subtotal">
-                            ${formatarPreco(subtotal)}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            `;
-
-        })
-        .join("");
-}
-
-
-// ========================================
-// ABRIR CARRINHO
-// ========================================
-
-function abrirCarrinho() {
-
-    carrinhoElemento.classList.add("aberto");
-
-    overlayCarrinho.classList.add("aberto");
-
-    document.body.classList.add("sem-scroll");
-
-    atualizarCarrinho();
-}
-
-
-// ========================================
-// FECHAR CARRINHO
-// ========================================
-
-function fecharCarrinho() {
-
-    carrinhoElemento.classList.remove("aberto");
-
-    overlayCarrinho.classList.remove("aberto");
-
-    document.body.classList.remove("sem-scroll");
-}
-
-
-// ========================================
-// LIMPAR CARRINHO
-// ========================================
-
-function limparCarrinho() {
-
-    if (carrinho.length === 0) {
-
-        mostrarToast("O carrinho já está vazio.");
-
-        return;
-    }
-
-
-    const confirmar = confirm(
-        "Deseja realmente limpar seu pedido?"
-    );
-
-
-    if (!confirmar) return;
-
-
-    carrinho = [];
-
-    salvarCarrinho();
-
-    atualizarCarrinho();
-
-    mostrarToast("Pedido limpo.");
-}
-
-
-// ========================================
-// WHATSAPP
-// ========================================
-
-function enviarPedidoWhatsApp() {
-
-    if (carrinho.length === 0) {
-
-        mostrarToast(
-            "Seu pedido está vazio."
-        );
-
-        return;
-    }
-
-
-    let mensagem =
-        "🍽️ *NOVO PEDIDO*\n\n";
-
-    mensagem +=
-        "Olá! Gostaria de fazer este pedido:\n\n";
-
-
-    carrinho.forEach(item => {
-
-        const subtotal =
-            Number(item.preco) *
-            Number(item.quantidade);
-
-
-        mensagem +=
-            `🍴 *${item.nome}*\n`;
-
-        mensagem +=
-            `Quantidade: ${item.quantidade}\n`;
-
-        mensagem +=
-            `Valor: ${formatarPreco(subtotal)}\n\n`;
-
-    });
-
-
-    const total =
-        valorTotalCarrinho();
-
-
-    mensagem +=
-        "━━━━━━━━━━━━━━━━━━\n";
-
-    mensagem +=
-        `💰 *TOTAL: ${formatarPreco(total)}*\n\n`;
-
-    mensagem +=
-        "Aguardo a confirmação do pedido. 😊";
-
-
-    const url =
-        `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-            mensagem
-        )}`;
-
-
-    window.open(
-        url,
-        "_blank"
-    );
-}
-
-
-// ========================================
-// EVENTOS DO CARRINHO
-// ========================================
-
-abrirCarrinhoBtn.addEventListener(
-    "click",
-    abrirCarrinho
-);
-
-fecharCarrinhoBtn.addEventListener(
-    "click",
-    fecharCarrinho
-);
-
-overlayCarrinho.addEventListener(
-    "click",
-    fecharCarrinho
-);
-
-limparCarrinhoBtn.addEventListener(
-    "click",
-    limparCarrinho
-);
-
-finalizarPedido.addEventListener(
-    "click",
-    enviarPedidoWhatsApp
-);
-
-
-// ========================================
-// ================= PRATOS ===============
-// ========================================
-
-
-// ========================================
-// CARREGAR PRATOS
-// ========================================
-
-async function carregarPratos() {
 
     try {
 
-        listaPratos.innerHTML = `
+        console.log("Conectando à API...");
 
-            <div class="loading">
+        const resposta = await fetch(`${API_URL}/usuarios`);
 
-                <div class="spinner"></div>
-
-                <p>
-                    Carregando cardápio...
-                </p>
-
-            </div>
-
-        `;
-
-
-        const resposta = await fetch(
-            `${API_URL}/pratos`
-        );
-
+        console.log("Status da API:", resposta.status);
 
         if (!resposta.ok) {
-
-            throw new Error(
-                `Erro HTTP ${resposta.status}`
-            );
+            throw new Error("Erro HTTP: " + resposta.status);
         }
 
+        const usuarios = await resposta.json();
 
-        pratos = await resposta.json();
+        console.log("Usuários recebidos:", usuarios);
 
+        usuariosCarregados = usuarios;
 
-        if (!Array.isArray(pratos)) {
+        lista.innerHTML = "";
 
-            throw new Error(
-                "A API não retornou uma lista de pratos."
-            );
-        }
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
 
-
-        criarCategorias();
-
-        mostrarPratos();
-
-
-    } catch (erro) {
-
-        console.error(
-            "Erro ao carregar pratos:",
-            erro
-        );
-
-
-        listaPratos.innerHTML = `
-
-            <div class="loading">
-
-                <div class="erro-icone">
-                    ⚠️
-                </div>
-
-                <h3>
-                    Não foi possível carregar o cardápio.
-                </h3>
-
-                <small>
-                    ${escaparHTML(erro.message)}
-                </small>
-
-            </div>
-
-        `;
-    }
-}
-
-
-// ========================================
-// CATEGORIAS
-// ========================================
-
-function criarCategorias() {
-
-    const nomes = [
-        "Todos",
-        "Hambúrgueres",
-        "Pizzas",
-        "Porções",
-        "Cachorros-quentes",
-        "Frangos",
-        "Carnes",
-        "Massas",
-        "Saladas",
-        "Pratos Executivos",
-        "Lanches",
-        "Sobremesas",
-        "Bebidas",
-        "Açaí",
-        "Cafés"
-    ];
-
-
-    const icones = {
-
-        "Todos": "🍽️",
-
-        "Hambúrgueres": "🍔",
-
-        "Pizzas": "🍕",
-
-        "Porções": "🍟",
-
-        "Cachorros-quentes": "🌭",
-
-        "Frangos": "🍗",
-
-        "Carnes": "🥩",
-
-        "Massas": "🍝",
-
-        "Saladas": "🥗",
-
-        "Pratos Executivos": "🍛",
-
-        "Lanches": "🥪",
-
-        "Sobremesas": "🍰",
-
-        "Bebidas": "🥤",
-
-        "Açaí": "🍨",
-
-        "Cafés": "☕"
-
-    };
-
-
-    categorias.innerHTML =
-        nomes.map(nome => {
-
-            return `
-
-                <button
-                    class="categoria ${
-                        nome === categoriaAtual
-                            ? "ativa"
-                            : ""
-                    }"
-                    data-categoria="${escaparHTML(nome)}"
-                    type="button"
-                >
-
-                    ${icones[nome] || "🍽️"}
-                    ${escaparHTML(nome)}
-
-                </button>
-
+            lista.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        Nenhum usuário cadastrado.
+                    </td>
+                </tr>
             `;
 
-        })
-        .join("");
+            return;
+        }
 
 
-    categorias
-        .querySelectorAll(".categoria")
-        .forEach(botao => {
+        usuarios.forEach(usuario => {
 
-            botao.addEventListener(
+            const linha = document.createElement("tr");
+
+
+            // ID
+            const tdId = document.createElement("td");
+            tdId.textContent = usuario.id;
+            linha.appendChild(tdId);
+
+
+            // NOME
+            const tdNome = document.createElement("td");
+            tdNome.textContent = usuario.nome;
+            linha.appendChild(tdNome);
+
+
+            // VALOR
+            const tdValor = document.createElement("td");
+
+            const valorNumerico = Number(usuario.VALOR);
+
+            tdValor.textContent =
+                "R$ " +
+                (Number.isNaN(valorNumerico)
+                    ? "0.00"
+                    : valorNumerico.toFixed(2));
+
+            linha.appendChild(tdValor);
+
+
+            // HORÁRIO
+            const tdHora = document.createElement("td");
+            tdHora.textContent = usuario.HRDOBABA || "";
+            linha.appendChild(tdHora);
+
+
+            // BOTÕES
+            const tdBotoes = document.createElement("td");
+
+
+            // BOTÃO EDITAR
+            const botaoEditar =
+                document.createElement("button");
+
+            botaoEditar.type = "button";
+            botaoEditar.textContent = "Editar";
+
+            botaoEditar.addEventListener(
                 "click",
-                () => {
+                function () {
 
-                    categorias
-                        .querySelectorAll(".categoria")
-                        .forEach(item => {
-
-                            item.classList.remove(
-                                "ativa"
-                            );
-
-                        });
-
-
-                    botao.classList.add(
-                        "ativa"
-                    );
-
-
-                    categoriaAtual =
-                        botao.dataset.categoria;
-
-
-                    mostrarPratos();
+                    editarUsuario(usuario.id);
 
                 }
             );
 
-        });
-}
+
+            // BOTÃO EXCLUIR
+            const botaoExcluir =
+                document.createElement("button");
+
+            botaoExcluir.type = "button";
+            botaoExcluir.textContent = "Excluir";
+
+            botaoExcluir.addEventListener(
+                "click",
+                function () {
+
+                    excluirUsuario(usuario.id);
+
+                }
+            );
 
 
-// ========================================
-// MOSTRAR PRATOS
-// ========================================
+            tdBotoes.appendChild(botaoEditar);
 
-function mostrarPratos() {
+            tdBotoes.appendChild(
+                document.createTextNode(" ")
+            );
 
-    const busca =
-        pesquisa.value
-            .toLowerCase()
-            .trim();
+            tdBotoes.appendChild(botaoExcluir);
 
 
-    const filtrados =
-        pratos.filter(prato => {
+            linha.appendChild(tdBotoes);
 
-            const categoriaOK =
-                categoriaAtual === "Todos" ||
-                prato.categoria === categoriaAtual;
-
-
-            const buscaOK =
-                String(prato.nome || "")
-                    .toLowerCase()
-                    .includes(busca) ||
-
-                String(prato.descricao || "")
-                    .toLowerCase()
-                    .includes(busca);
-
-
-            return categoriaOK && buscaOK;
+            lista.appendChild(linha);
 
         });
 
 
-    contador.textContent =
-        `${filtrados.length} ${
-            filtrados.length === 1
-                ? "prato encontrado"
-                : "pratos encontrados"
-        }`;
+    } catch (erro) {
 
+        console.error("ERRO NA API:", erro);
 
-    if (filtrados.length === 0) {
-
-        listaPratos.innerHTML = `
-
-            <div class="loading">
-
-                <div class="erro-icone">
-                    🍽️
-                </div>
-
-                <h3>
-                    Nenhum prato encontrado.
-                </h3>
-
-                <p>
-                    Tente pesquisar outro prato.
-                </p>
-
-            </div>
-
+        lista.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    style="color:red;"
+                >
+                    Erro ao conectar com a API.
+                </td>
+            </tr>
         `;
 
-        return;
     }
 
-
-    listaPratos.innerHTML =
-        filtrados
-            .map(criarCard)
-            .join("");
-}
-
-
-// ========================================
-// CRIAR CARD
-// ========================================
-
-function criarCard(prato) {
-
-    const imagemHTML =
-        prato.imagem
-            ? `
-
-                <img
-                    src="${escaparHTML(prato.imagem)}"
-                    alt="${escaparHTML(prato.nome)}"
-                    loading="lazy"
-                >
-
-            `
-            : `
-
-                <div class="sem-imagem">
-                    🍽️
-                </div>
-
-            `;
-
-
-    return `
-
-        <article class="card">
-
-            <div class="card-imagem">
-
-                ${imagemHTML}
-
-                <span class="card-categoria">
-
-                    ${escaparHTML(
-                        prato.categoria
-                    )}
-
-                </span>
-
-            </div>
-
-
-            <div class="card-corpo">
-
-                <div class="card-topo">
-
-                    <h3>
-                        ${escaparHTML(
-                            prato.nome
-                        )}
-                    </h3>
-
-                    <span class="preco">
-
-                        ${formatarPreco(
-                            prato.preco
-                        )}
-
-                    </span>
-
-                </div>
-
-
-                <p class="descricao">
-
-                    ${escaparHTML(
-                        prato.descricao ||
-                        "Delicioso prato da casa."
-                    )}
-
-                </p>
-
-
-                <button
-                    class="btn-adicionar-pedido"
-                    type="button"
-                    onclick="adicionarAoCarrinho(${prato.id})"
-                >
-
-                    🛒 Adicionar ao pedido
-
-                </button>
-
-
-                <div class="acoes">
-
-                    <button
-                        class="btn-editar"
-                        type="button"
-                        onclick="editarPrato(${prato.id})"
-                    >
-
-                        ✏️ Editar
-
-                    </button>
-
-
-                    <button
-                        class="btn-excluir"
-                        type="button"
-                        onclick="excluirPrato(${prato.id})"
-                    >
-
-                        🗑️ Excluir
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </article>
-
-    `;
-}
-
-
-// ========================================
-// ================= MODAL ================
-// ========================================
-
-
-// ========================================
-// ABRIR FORMULÁRIO
-// ========================================
-
-function abrirFormulario() {
-
-    limparFormulario();
-
-
-    modal.classList.add("aberto");
-
-    document.body.classList.add(
-        "sem-scroll"
-    );
-
-
-    setTimeout(() => {
-
-        nome.focus();
-
-    }, 100);
-}
-
-
-// ========================================
-// FECHAR FORMULÁRIO
-// ========================================
-
-function fecharFormulario() {
-
-    modal.classList.remove(
-        "aberto"
-    );
-
-    document.body.classList.remove(
-        "sem-scroll"
-    );
-
-    limparFormulario();
-}
-
-
-// ========================================
-// LIMPAR FORMULÁRIO
-// ========================================
-
-function limparFormulario() {
-
-    form.reset();
-
-    pratoEditando = null;
-
-    imagemAtual = "";
-
-
-    tituloFormulario.textContent =
-        "Novo prato";
-
-
-    textoBotao.textContent =
-        "Cadastrar prato";
-
-
-    preview.innerHTML = `
-
-        <span>
-            🖼️
-        </span>
-
-        <p>
-            A imagem aparecerá aqui
-        </p>
-
-    `;
-}
-
-
-// ========================================
-// EVENTO NOVO PRATO
-// ========================================
-
-const abrirFormularioBtn =
-    document.getElementById(
-        "abrirFormulario"
-    );
-
-
-abrirFormularioBtn.addEventListener(
-    "click",
-    abrirFormulario
-);
-
-
-fecharModalBtn.addEventListener(
-    "click",
-    fecharFormulario
-);
-
-
-cancelarFormulario.addEventListener(
-    "click",
-    fecharFormulario
-);
-
-
-// ========================================
-// FECHAR MODAL CLICANDO FORA
-// ========================================
-
-modal.addEventListener(
-    "click",
-    evento => {
-
-        if (
-            evento.target === modal
-        ) {
-
-            fecharFormulario();
-
-        }
-
-    }
-);
-
-
-// ========================================
-// IMAGEM
-// ========================================
-
-imagem.addEventListener(
-    "change",
-    evento => {
-
-        const arquivo =
-            evento.target.files[0];
-
-
-        if (!arquivo) {
-
-            return;
-        }
-
-
-        if (
-            arquivo.size >
-            5 * 1024 * 1024
-        ) {
-
-            imagem.value = "";
-
-            mostrarToast(
-                "A imagem deve ter no máximo 5 MB."
-            );
-
-            return;
-        }
-
-
-        if (
-            !arquivo.type.startsWith(
-                "image/"
-            )
-        ) {
-
-            imagem.value = "";
-
-            mostrarToast(
-                "Escolha uma imagem válida."
-            );
-
-            return;
-        }
-
-
-        const leitor =
-            new FileReader();
-
-
-        leitor.onload =
-            eventoLeitura => {
-
-                imagemAtual =
-                    eventoLeitura.target.result;
-
-
-                mostrarPreview(
-                    imagemAtual
-                );
-
-            };
-
-
-        leitor.onerror =
-            () => {
-
-                mostrarToast(
-                    "Erro ao carregar imagem."
-                );
-
-            };
-
-
-        leitor.readAsDataURL(
-            arquivo
-        );
-
-    }
-);
-
-
-// ========================================
-// PREVIEW
-// ========================================
-
-function mostrarPreview(src) {
-
-    preview.innerHTML = `
-
-        <img
-            src="${escaparHTML(src)}"
-            alt="Preview da imagem"
-        >
-
-    `;
 }
 
 
@@ -1200,88 +166,95 @@ function mostrarPreview(src) {
 // CADASTRAR / EDITAR
 // ========================================
 
-form.addEventListener(
-    "submit",
-    async evento => {
-
-        evento.preventDefault();
+const formUsuario =
+    document.getElementById("formUsuario");
 
 
-        const precoNumerico =
-            Number(preco.value);
+if (formUsuario) {
+
+    formUsuario.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
 
 
-        if (
-            !nome.value.trim() ||
-            !categoria.value.trim() ||
-            !preco.value ||
-            precoNumerico < 0
-        ) {
-
-            mostrarToast(
-                "Preencha corretamente os campos obrigatórios."
-            );
-
-            return;
-        }
+            const nome =
+                document
+                    .getElementById("nome")
+                    .value
+                    .trim();
 
 
-        const dados = {
-
-            nome:
-                nome.value.trim(),
-
-            descricao:
-                descricao.value.trim(),
-
-            preco:
-                precoNumerico,
-
-            imagem:
-                imagemAtual || "",
-
-            categoria:
-                categoria.value.trim()
-
-        };
+            const valor =
+                document
+                    .getElementById("VALOR")
+                    .value
+                    .trim();
 
 
-        try {
-
-            textoBotao.textContent =
-                "Salvando...";
-
-
-            let resposta;
+            const horaBaba =
+                document
+                    .getElementById("HRDOBABA")
+                    .value
+                    .trim();
 
 
-            if (pratoEditando) {
+            if (!nome) {
 
-                resposta =
-                    await fetch(
-                        `${API_URL}/pratos/${pratoEditando}`,
+                alert("Digite o nome.");
+
+                return;
+
+            }
+
+
+            if (!valor) {
+
+                alert("Digite o valor.");
+
+                return;
+
+            }
+
+
+            if (!horaBaba) {
+
+                alert("Digite o horário do baba.");
+
+                return;
+
+            }
+
+
+            const dados = {
+
+                nome: nome,
+
+                VALOR: Number(valor),
+
+                HRDOBABA: horaBaba
+
+            };
+
+
+            console.log("Enviando:", dados);
+
+
+            try {
+
+                let resposta;
+
+
+                // ====================================
+                // CADASTRAR
+                // ====================================
+
+                if (usuarioEditando === null) {
+
+                    resposta = await fetch(
+                        `${API_URL}/usuarios`,
                         {
-
-                            method: "PUT",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify(dados)
-
-                        }
-                    );
-
-            } else {
-
-                resposta =
-                    await fetch(
-                        `${API_URL}/pratos`,
-                        {
-
                             method: "POST",
 
                             headers: {
@@ -1291,267 +264,366 @@ form.addEventListener(
 
                             body:
                                 JSON.stringify(dados)
-
                         }
                     );
 
-            }
+                }
 
 
-            const tipo =
-                resposta.headers.get(
-                    "content-type"
-                ) || "";
+                // ====================================
+                // EDITAR
+                // ====================================
+
+                else {
+
+                    console.log(
+                        "Editando usuário ID:",
+                        usuarioEditando
+                    );
 
 
-            if (
-                !tipo.includes(
-                    "application/json"
-                )
-            ) {
+                    resposta = await fetch(
+                        `${API_URL}/usuarios/${usuarioEditando}`,
+                        {
+                            method: "PUT",
 
-                throw new Error(
-                    "O servidor não retornou JSON."
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(dados)
+                        }
+                    );
+
+                }
+
+
+                const resultado =
+                    await resposta.json();
+
+
+                console.log(
+                    "Resposta da API:",
+                    resultado
                 );
-            }
 
 
-            const resultado =
-                await resposta.json();
+                if (!resposta.ok) {
+
+                    alert(
+                        resultado.erro ||
+                        "Erro ao salvar usuário."
+                    );
+
+                    return;
+
+                }
 
 
-            if (!resposta.ok) {
+                if (usuarioEditando === null) {
 
-                throw new Error(
-                    resultado.erro ||
-                    "Erro ao salvar prato."
+                    alert(
+                        "Usuário cadastrado com sucesso!"
+                    );
+
+                } else {
+
+                    alert(
+                        "Usuário atualizado com sucesso!"
+                    );
+
+                }
+
+
+                cancelarEdicao();
+
+                await carregarUsuarios();
+
+
+            } catch (erro) {
+
+                console.error(
+                    "Erro ao salvar:",
+                    erro
                 );
+
+                alert(
+                    "Erro ao conectar com a API."
+                );
+
             }
-
-
-            fecharFormulario();
-
-
-            mostrarToast(
-                resultado.mensagem ||
-                "Prato salvo com sucesso!"
-            );
-
-
-            await carregarPratos();
-
-
-        } catch (erro) {
-
-            console.error(
-                "Erro ao salvar:",
-                erro
-            );
-
-
-            textoBotao.textContent =
-                pratoEditando
-                    ? "Salvar alterações"
-                    : "Cadastrar prato";
-
-
-            mostrarToast(
-                erro.message
-            );
 
         }
-
-    }
-);
-
-
-// ========================================
-// EDITAR PRATO
-// ========================================
-
-function editarPrato(id) {
-
-    const prato =
-        pratos.find(
-            item =>
-                Number(item.id) ===
-                Number(id)
-        );
-
-
-    if (!prato) {
-
-        mostrarToast(
-            "Prato não encontrado."
-        );
-
-        return;
-    }
-
-
-    pratoEditando =
-        prato.id;
-
-
-    imagemAtual =
-        prato.imagem || "";
-
-
-    nome.value =
-        prato.nome || "";
-
-
-    descricao.value =
-        prato.descricao || "";
-
-
-    preco.value =
-        prato.preco || "";
-
-
-    categoria.value =
-        prato.categoria || "";
-
-
-    tituloFormulario.textContent =
-        "Editar prato";
-
-
-    textoBotao.textContent =
-        "Salvar alterações";
-
-
-    if (imagemAtual) {
-
-        mostrarPreview(
-            imagemAtual
-        );
-
-    } else {
-
-        preview.innerHTML = `
-
-            <span>
-                🖼️
-            </span>
-
-            <p>
-                A imagem aparecerá aqui
-            </p>
-
-        `;
-    }
-
-
-    modal.classList.add(
-        "aberto"
     );
 
-
-    document.body.classList.add(
-        "sem-scroll"
-    );
 }
 
 
 // ========================================
-// EXCLUIR PRATO
+// EDITAR
 // ========================================
 
-async function excluirPrato(id) {
+function editarUsuario(id) {
 
-    const prato =
-        pratos.find(
-            item =>
-                Number(item.id) ===
-                Number(id)
+    console.log(
+        "Clicou em editar. ID:",
+        id
+    );
+
+
+    // Procura o usuário que foi clicado
+    const usuario =
+        usuariosCarregados.find(
+            function (item) {
+
+                return Number(item.id) === Number(id);
+
+            }
         );
 
 
-    if (!prato) {
+    if (!usuario) {
 
-        mostrarToast(
-            "Prato não encontrado."
+        console.error(
+            "Usuário não encontrado:",
+            id
+        );
+
+        alert(
+            "Não foi possível encontrar esse usuário."
         );
 
         return;
+
     }
 
 
-    const confirmar =
-        confirm(
-            `Deseja excluir "${prato.nome}"?`
-        );
+    console.log(
+        "Usuário selecionado:",
+        usuario
+    );
 
 
-    if (!confirmar) {
+    usuarioEditando = usuario.id;
+
+
+    // ====================================
+    // PREENCHER NOME
+    // ====================================
+
+    const campoNome =
+        document.getElementById("nome");
+
+    if (campoNome) {
+
+        campoNome.value =
+            usuario.nome || "";
+
+    }
+
+
+    // ====================================
+    // PREENCHER VALOR
+    // ====================================
+
+    const campoValor =
+        document.getElementById("VALOR");
+
+    if (campoValor) {
+
+        campoValor.value =
+            usuario.VALOR ?? "";
+
+    }
+
+
+    // ====================================
+    // PREENCHER HORÁRIO
+    // ====================================
+
+    const campoHora =
+        document.getElementById("HRDOBABA");
+
+    if (campoHora) {
+
+        campoHora.value =
+            usuario.HRDOBABA || "";
+
+    }
+
+
+    // ====================================
+    // ALTERAR TÍTULO
+    // ====================================
+
+    const titulo =
+        document.getElementById("titulo-form");
+
+    if (titulo) {
+
+        titulo.textContent =
+            "EDITAR QUEM VAI?";
+
+    }
+
+
+    // ====================================
+    // ALTERAR BOTÃO SALVAR
+    // ====================================
+
+    const btnSalvar =
+        document.getElementById("btnSalvar");
+
+    if (btnSalvar) {
+
+        btnSalvar.textContent =
+            "Salvar alterações";
+
+    }
+
+
+    // ====================================
+    // MOSTRAR CANCELAR
+    // ====================================
+
+    const btnCancelar =
+        document.getElementById("btnCancelar");
+
+    if (btnCancelar) {
+
+        btnCancelar.style.display =
+            "inline-block";
+
+    }
+
+
+    // Coloca o usuário no início da tela
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+}
+
+
+// ========================================
+// CANCELAR EDIÇÃO
+// ========================================
+
+function cancelarEdicao() {
+
+    usuarioEditando = null;
+
+
+    const form =
+        document.getElementById("formUsuario");
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+
+    const titulo =
+        document.getElementById("titulo-form");
+
+    if (titulo) {
+
+        titulo.textContent =
+            "QUEM VAI?";
+
+    }
+
+
+    const btnSalvar =
+        document.getElementById("btnSalvar");
+
+    if (btnSalvar) {
+
+        btnSalvar.textContent =
+            "Cadastrar";
+
+    }
+
+
+    const btnCancelar =
+        document.getElementById("btnCancelar");
+
+    if (btnCancelar) {
+
+        btnCancelar.style.display =
+            "none";
+
+    }
+
+}
+
+
+// ========================================
+// EXCLUIR
+// ========================================
+
+async function excluirUsuario(id) {
+
+    if (
+        !confirm(
+            "Tem certeza que deseja excluir este usuário?"
+        )
+    ) {
 
         return;
+
     }
 
 
     try {
 
+        console.log(
+            "Excluindo usuário:",
+            id
+        );
+
+
         const resposta =
             await fetch(
-                `${API_URL}/pratos/${id}`,
+                `${API_URL}/usuarios/${id}`,
                 {
                     method: "DELETE"
                 }
             );
 
 
-        const tipo =
-            resposta.headers.get(
-                "content-type"
-            ) || "";
-
-
-        if (
-            !tipo.includes(
-                "application/json"
-            )
-        ) {
-
-            throw new Error(
-                "O servidor não retornou JSON."
-            );
-        }
-
-
         const resultado =
             await resposta.json();
 
 
-        if (!resposta.ok) {
-
-            throw new Error(
-                resultado.erro ||
-                "Erro ao excluir prato."
-            );
-        }
-
-
-        carrinho =
-            carrinho.filter(
-                item =>
-                    Number(item.id) !==
-                    Number(id)
-            );
-
-
-        salvarCarrinho();
-
-        atualizarCarrinho();
-
-
-        mostrarToast(
-            resultado.mensagem ||
-            "Prato excluído com sucesso!"
+        console.log(
+            "Resposta da exclusão:",
+            resultado
         );
 
 
-        await carregarPratos();
+        if (!resposta.ok) {
+
+            alert(
+                resultado.erro ||
+                "Erro ao excluir usuário."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            "Usuário excluído com sucesso!"
+        );
+
+
+        await carregarUsuarios();
 
 
     } catch (erro) {
@@ -1561,69 +633,24 @@ async function excluirPrato(id) {
             erro
         );
 
-
-        mostrarToast(
-            erro.message
+        alert(
+            "Erro ao conectar com a API."
         );
+
     }
+
 }
 
 
 // ========================================
-// PESQUISA
-// ========================================
-
-pesquisa.addEventListener(
-    "input",
-    mostrarPratos
-);
-
-
-// ========================================
-// TECLA ESC
+// INICIAR SISTEMA
 // ========================================
 
 document.addEventListener(
-    "keydown",
-    evento => {
+    "DOMContentLoaded",
+    function () {
 
-        if (
-            evento.key !== "Escape"
-        ) {
-
-            return;
-        }
-
-
-        if (
-            carrinhoElemento.classList.contains(
-                "aberto"
-            )
-        ) {
-
-            fecharCarrinho();
-
-        }
-
-
-        if (
-            modal.classList.contains(
-                "aberto"
-            )
-        ) {
-
-            fecharFormulario();
-
-        }
+        carregarUsuarios();
 
     }
 );
-
-
-// ========================================
-// INICIAR
-// ========================================
-
-atualizarCarrinho();
-
-carregarPratos();
