@@ -1,4 +1,4 @@
-const API_URL = "https://cardapio-restaurante-2cun.onrender.com";
+const API_URL = "";
 
 const WHATSAPP = "5579981021378";
 
