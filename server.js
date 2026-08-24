@@ -5,39 +5,21 @@ const path = require("path");
 
 const app = express();
 
+const PORT = process.env.PORT || 3000;
 
-// ==========================================
+
+// ========================================
 // CONFIGURAÇÕES
-// ==========================================
+// ========================================
 
 app.use(cors());
 
-
-// Permite receber imagens Base64 maiores
-app.use(express.json({
-    limit: "10mb"
-}));
+app.use(express.json());
 
 
-// ==========================================
-// ARQUIVOS DO SITE
-// ==========================================
-
-app.use(express.static(__dirname));
-
-
-app.get("/", (req, res) => {
-
-    res.sendFile(
-        path.join(__dirname, "index.html")
-    );
-
-});
-
-
-// ==========================================
-// BANCO DE DADOS
-// ==========================================
+// ========================================
+// BANCO
+// ========================================
 
 const dbPath =
     path.join(__dirname, "banco.db");
@@ -46,19 +28,19 @@ const dbPath =
 const db =
     new sqlite3.Database(
         dbPath,
-        (erro) => {
+        (err) => {
 
-            if (erro) {
+            if (err) {
 
                 console.error(
                     "Erro ao conectar ao banco:",
-                    erro.message
+                    err.message
                 );
 
             } else {
 
                 console.log(
-                    "Banco de dados conectado!"
+                    "Banco conectado com sucesso!"
                 );
 
             }
@@ -67,87 +49,83 @@ const db =
     );
 
 
-// ==========================================
-// CRIAR TABELA
-// ==========================================
+// ========================================
+// CRIAR TABELA NOVA
+// ========================================
 
-db.run(`
-    CREATE TABLE IF NOT EXISTS pratos (
+db.run(
+    `
+    CREATE TABLE IF NOT EXISTS usuarios (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         nome TEXT NOT NULL,
-        descricao TEXT,
-        preco REAL NOT NULL,
-        imagem TEXT,
-        categoria TEXT NOT NULL
+
+        VALOR REAL NOT NULL,
+
+        HRDOBABA TEXT NOT NULL
+
     )
-`, (erro) => {
+    `,
+    (err) => {
 
-    if (erro) {
+        if (err) {
 
-        console.error(
-            "Erro ao criar tabela:",
-            erro.message
-        );
+            console.error(
+                "Erro ao criar tabela:",
+                err.message
+            );
 
-    } else {
+        } else {
 
-        console.log(
-            "Tabela de pratos pronta!"
-        );
+            console.log(
+                "Tabela usuarios pronta!"
+            );
+
+        }
 
     }
+);
 
-});
 
+// ========================================
+// INÍCIO
+// ========================================
 
-// ==========================================
-// TESTE DA API
-// ==========================================
-
-app.get("/api", (req, res) => {
+app.get("/", (req, res) => {
 
     res.json({
-
-        sucesso: true,
-
         mensagem:
-            "API do restaurante funcionando!"
-
+            "API BABA DOS GURI funcionando!"
     });
 
 });
 
 
-// ==========================================
-// LISTAR PRATOS
-// ==========================================
+// ========================================
+// LISTAR
+// ========================================
 
-app.get("/pratos", (req, res) => {
+app.get("/usuarios", (req, res) => {
 
     db.all(
-        "SELECT * FROM pratos ORDER BY id DESC",
+        `
+        SELECT *
+        FROM usuarios
+        ORDER BY id DESC
+        `,
         [],
-        (erro, resultados) => {
+        (err, usuarios) => {
 
-            if (erro) {
-
-                console.error(
-                    "Erro ao buscar pratos:",
-                    erro
-                );
+            if (err) {
 
                 return res.status(500).json({
-
-                    sucesso: false,
-
-                    erro: erro.message
-
+                    erro: err.message
                 });
 
             }
 
-
-            res.json(resultados);
+            res.json(usuarios);
 
         }
     );
@@ -155,177 +133,57 @@ app.get("/pratos", (req, res) => {
 });
 
 
-// ==========================================
-// CADASTRAR PRATO
-// ==========================================
+// ========================================
+// CADASTRAR
+// ========================================
 
-app.post("/pratos", (req, res) => {
+app.post("/usuarios", (req, res) => {
 
     const {
         nome,
-        descricao,
-        preco,
-        imagem,
-        categoria
+        VALOR,
+        HRDOBABA
     } = req.body;
 
 
-    // -------------------------------
-    // VALIDAR NOME
-    // -------------------------------
-
     if (
         !nome ||
-        !nome.trim()
+        VALOR === undefined ||
+        VALOR === null ||
+        !HRDOBABA
     ) {
 
         return res.status(400).json({
 
-            sucesso: false,
-
             erro:
-                "Informe o nome do prato."
+                "Nome, VALOR e HR DO BABA são obrigatórios."
 
         });
 
     }
-
-
-    // -------------------------------
-    // VALIDAR PREÇO
-    // -------------------------------
-
-    if (
-        preco === undefined ||
-        preco === ""
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Informe o preço."
-
-        });
-
-    }
-
-
-    const precoNumerico =
-        Number(preco);
-
-
-    if (
-        isNaN(precoNumerico)
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Preço inválido."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // VALIDAR CATEGORIA
-    // -------------------------------
-
-    if (
-        !categoria ||
-        !categoria.trim()
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Informe a categoria."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // VALIDAR IMAGEM
-    // -------------------------------
-
-    let imagemFinal =
-        imagem || "";
-
-
-    if (
-        imagemFinal &&
-        !imagemFinal.startsWith("data:image/")
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Imagem inválida."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // SQL
-    // -------------------------------
-
-    const sql = `
-        INSERT INTO pratos
-        (
-            nome,
-            descricao,
-            preco,
-            imagem,
-            categoria
-        )
-        VALUES (?, ?, ?, ?, ?)
-    `;
 
 
     db.run(
-        sql,
-
+        `
+        INSERT INTO usuarios
+        (
+            nome,
+            VALOR,
+            HRDOBABA
+        )
+        VALUES (?, ?, ?)
+        `,
         [
-            nome.trim(),
-
-            descricao || "",
-
-            precoNumerico,
-
-            imagemFinal,
-
-            categoria.trim()
+            nome,
+            Number(VALOR),
+            HRDOBABA
         ],
+        function(err) {
 
-        function (erro) {
-
-            if (erro) {
-
-                console.error(
-                    "Erro ao cadastrar:",
-                    erro
-                );
+            if (err) {
 
                 return res.status(500).json({
-
-                    sucesso: false,
-
-                    erro:
-                        erro.message
-
+                    erro: err.message
                 });
 
             }
@@ -333,32 +191,11 @@ app.post("/pratos", (req, res) => {
 
             res.status(201).json({
 
-                sucesso: true,
-
                 mensagem:
-                    "Prato cadastrado com sucesso!",
+                    "Usuário cadastrado!",
 
-                prato: {
-
-                    id:
-                        this.lastID,
-
-                    nome:
-                        nome.trim(),
-
-                    descricao:
-                        descricao || "",
-
-                    preco:
-                        precoNumerico,
-
-                    imagem:
-                        imagemFinal,
-
-                    categoria:
-                        categoria.trim()
-
-                }
+                id:
+                    this.lastID
 
             });
 
@@ -368,180 +205,74 @@ app.post("/pratos", (req, res) => {
 });
 
 
-// ==========================================
-// EDITAR PRATO
-// ==========================================
+// ========================================
+// EDITAR
+// ========================================
 
-app.put("/pratos/:id", (req, res) => {
+app.put("/usuarios/:id", (req, res) => {
 
     const id =
-        Number(req.params.id);
+        req.params.id;
 
 
     const {
         nome,
-        descricao,
-        preco,
-        imagem,
-        categoria
+        VALOR,
+        HRDOBABA
     } = req.body;
 
 
-    // -------------------------------
-    // VALIDAR NOME
-    // -------------------------------
-
     if (
         !nome ||
-        !nome.trim()
+        VALOR === undefined ||
+        VALOR === null ||
+        !HRDOBABA
     ) {
 
         return res.status(400).json({
 
-            sucesso: false,
-
             erro:
-                "Informe o nome do prato."
+                "Nome, VALOR e HR DO BABA são obrigatórios."
 
         });
 
     }
 
 
-    // -------------------------------
-    // VALIDAR CATEGORIA
-    // -------------------------------
+    db.run(
+        `
+        UPDATE usuarios
 
-    if (
-        !categoria ||
-        !categoria.trim()
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Informe a categoria."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // VALIDAR PREÇO
-    // -------------------------------
-
-    const precoNumerico =
-        Number(preco);
-
-
-    if (
-        isNaN(precoNumerico)
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Preço inválido."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // IMAGEM
-    // -------------------------------
-
-    let imagemFinal =
-        imagem || "";
-
-
-    if (
-        imagemFinal &&
-        !imagemFinal.startsWith("data:image/")
-    ) {
-
-        return res.status(400).json({
-
-            sucesso: false,
-
-            erro:
-                "Imagem inválida."
-
-        });
-
-    }
-
-
-    // -------------------------------
-    // SQL
-    // -------------------------------
-
-    const sql = `
-        UPDATE pratos
         SET
             nome = ?,
-            descricao = ?,
-            preco = ?,
-            imagem = ?,
-            categoria = ?
+            VALOR = ?,
+            HRDOBABA = ?
+
         WHERE id = ?
-    `;
-
-
-    db.run(
-        sql,
-
+        `,
         [
-            nome.trim(),
-
-            descricao || "",
-
-            precoNumerico,
-
-            imagemFinal,
-
-            categoria.trim(),
-
+            nome,
+            Number(VALOR),
+            HRDOBABA,
             id
         ],
+        function(err) {
 
-        function (erro) {
-
-            if (erro) {
-
-                console.error(
-                    "Erro ao editar:",
-                    erro
-                );
+            if (err) {
 
                 return res.status(500).json({
-
-                    sucesso: false,
-
-                    erro:
-                        erro.message
-
+                    erro: err.message
                 });
 
             }
 
 
-            if (
-                this.changes === 0
-            ) {
+            if (this.changes === 0) {
 
                 return res.status(404).json({
 
-                    sucesso: false,
-
                     erro:
-                        "Prato não encontrado."
+                        "Usuário não encontrado."
 
                 });
 
@@ -550,10 +281,8 @@ app.put("/pratos/:id", (req, res) => {
 
             res.json({
 
-                sucesso: true,
-
                 mensagem:
-                    "Prato atualizado com sucesso!"
+                    "Usuário atualizado!"
 
             });
 
@@ -563,53 +292,39 @@ app.put("/pratos/:id", (req, res) => {
 });
 
 
-// ==========================================
-// EXCLUIR PRATO
-// ==========================================
+// ========================================
+// EXCLUIR
+// ========================================
 
-app.delete("/pratos/:id", (req, res) => {
+app.delete("/usuarios/:id", (req, res) => {
 
     const id =
-        Number(req.params.id);
+        req.params.id;
 
 
     db.run(
-
-        "DELETE FROM pratos WHERE id = ?",
-
+        `
+        DELETE FROM usuarios
+        WHERE id = ?
+        `,
         [id],
+        function(err) {
 
-        function (erro) {
-
-            if (erro) {
-
-                console.error(
-                    "Erro ao excluir:",
-                    erro
-                );
+            if (err) {
 
                 return res.status(500).json({
-
-                    sucesso: false,
-
-                    erro:
-                        erro.message
-
+                    erro: err.message
                 });
 
             }
 
 
-            if (
-                this.changes === 0
-            ) {
+            if (this.changes === 0) {
 
                 return res.status(404).json({
 
-                    sucesso: false,
-
                     erro:
-                        "Prato não encontrado."
+                        "Usuário não encontrado."
 
                 });
 
@@ -618,10 +333,8 @@ app.delete("/pratos/:id", (req, res) => {
 
             res.json({
 
-                sucesso: true,
-
                 mensagem:
-                    "Prato excluído com sucesso!"
+                    "Usuário excluído!"
 
             });
 
@@ -631,78 +344,12 @@ app.delete("/pratos/:id", (req, res) => {
 });
 
 
-// ==========================================
-// ROTA 404 DA API
-// ==========================================
-
-app.use(
-    "/pratos",
-    (req, res) => {
-
-        res.status(404).json({
-
-            sucesso: false,
-
-            erro:
-                "Rota de pratos não encontrada."
-
-        });
-
-    }
-);
-
-
-// ==========================================
-// ERRO DE JSON MUITO GRANDE
-// ==========================================
-
-app.use(
-    (erro, req, res, next) => {
-
-        if (
-            erro.type ===
-            "entity.too.large"
-        ) {
-
-            return res.status(413).json({
-
-                sucesso: false,
-
-                erro:
-                    "A imagem é muito grande. Escolha uma imagem menor."
-
-            });
-
-        }
-
-
-        console.error(erro);
-
-
-        res.status(500).json({
-
-            sucesso: false,
-
-            erro:
-                "Erro interno do servidor."
-
-        });
-
-    }
-);
-
-
-// ==========================================
-// INICIAR SERVIDOR
-// ==========================================
-
-const PORT =
-    process.env.PORT || 3000;
-
+// ========================================
+// SERVIDOR
+// ========================================
 
 app.listen(
     PORT,
-    "0.0.0.0",
     () => {
 
         console.log(
