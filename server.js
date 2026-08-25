@@ -1,12 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+const { Pool } = require("pg");
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-
 
 // ========================================
 // CONFIGURAÇÕES
@@ -16,77 +14,79 @@ app.use(cors());
 
 app.use(express.json());
 
-
 // ========================================
-// BANCO
-// ========================================
-
-const dbPath =
-    path.join(__dirname, "banco.db");
-
-
-const db =
-    new sqlite3.Database(
-        dbPath,
-        (err) => {
-
-            if (err) {
-
-                console.error(
-                    "Erro ao conectar ao banco:",
-                    err.message
-                );
-
-            } else {
-
-                console.log(
-                    "Banco conectado com sucesso!"
-                );
-
-            }
-
-        }
-    );
-
-
-// ========================================
-// CRIAR TABELA NOVA
+// BANCO POSTGRESQL
 // ========================================
 
-db.run(
-    `
-    CREATE TABLE IF NOT EXISTS usuarios (
+if (!process.env.DATABASE_URL) {
+    console.error("ERRO: DATABASE_URL não foi configurada.");
+    process.exit(1);
+}
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
-        nome TEXT NOT NULL,
+// ========================================
+// TESTAR CONEXÃO
+// ========================================
 
-        VALOR REAL NOT NULL,
+pool.connect()
+    .then((client) => {
 
-        HRDOBABA TEXT NOT NULL
+        console.log("PostgreSQL conectado com sucesso!");
 
-    )
-    `,
-    (err) => {
+        client.release();
 
-        if (err) {
+    })
+    .catch((err) => {
 
-            console.error(
-                "Erro ao criar tabela:",
-                err.message
-            );
+        console.error(
+            "Erro ao conectar ao PostgreSQL:",
+            err.message
+        );
 
-        } else {
+    });
 
-            console.log(
-                "Tabela usuarios pronta!"
-            );
+// ========================================
+// CRIAR TABELA DO BABA
+// ========================================
 
-        }
+async function criarTabela() {
+
+    try {
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS baba_usuarios (
+
+                id SERIAL PRIMARY KEY,
+
+                nome TEXT NOT NULL,
+
+                valor REAL NOT NULL,
+
+                hrdobaba TEXT NOT NULL
+
+            )
+        `);
+
+        console.log("Tabela baba_usuarios pronta!");
+
+    } catch (err) {
+
+        console.error(
+            "Erro ao criar tabela do BABA:",
+            err.message
+        );
 
     }
-);
 
+}
+
+criarTabela();
 
 // ========================================
 // INÍCIO
@@ -95,56 +95,59 @@ db.run(
 app.get("/", (req, res) => {
 
     res.json({
-        mensagem:
-            "API BABA DOS GURI funcionando!"
+        mensagem: "API BABA DOS GURI funcionando!"
     });
 
 });
-
 
 // ========================================
 // LISTAR
 // ========================================
 
-app.get("/usuarios", (req, res) => {
+app.get("/usuarios", async (req, res) => {
 
-    db.all(
-        `
-        SELECT *
-        FROM usuarios
-        ORDER BY id DESC
-        `,
-        [],
-        (err, usuarios) => {
+    try {
 
-            if (err) {
+        const resultado = await pool.query(`
+            SELECT
+                id,
+                nome,
+                valor AS "VALOR",
+                hrdobaba AS "HRDOBABA"
 
-                return res.status(500).json({
-                    erro: err.message
-                });
+            FROM baba_usuarios
 
-            }
+            ORDER BY id DESC
+        `);
 
-            res.json(usuarios);
+        res.json(resultado.rows);
 
-        }
-    );
+    } catch (err) {
+
+        console.error(
+            "Erro ao listar:",
+            err.message
+        );
+
+        res.status(500).json({
+            erro: err.message
+        });
+
+    }
 
 });
-
 
 // ========================================
 // CADASTRAR
 // ========================================
 
-app.post("/usuarios", (req, res) => {
+app.post("/usuarios", async (req, res) => {
 
     const {
         nome,
         VALOR,
         HRDOBABA
     } = req.body;
-
 
     if (
         !nome ||
@@ -162,65 +165,66 @@ app.post("/usuarios", (req, res) => {
 
     }
 
+    try {
 
-    db.run(
-        `
-        INSERT INTO usuarios
-        (
-            nome,
-            VALOR,
-            HRDOBABA
-        )
-        VALUES (?, ?, ?)
-        `,
-        [
-            nome,
-            Number(VALOR),
-            HRDOBABA
-        ],
-        function(err) {
+        const resultado = await pool.query(
+            `
+            INSERT INTO baba_usuarios
+            (
+                nome,
+                valor,
+                hrdobaba
+            )
 
-            if (err) {
+            VALUES ($1, $2, $3)
 
-                return res.status(500).json({
-                    erro: err.message
-                });
+            RETURNING id
+            `,
+            [
+                nome,
+                Number(VALOR),
+                HRDOBABA
+            ]
+        );
 
-            }
+        res.status(201).json({
 
+            mensagem:
+                "Usuário cadastrado!",
 
-            res.status(201).json({
+            id:
+                resultado.rows[0].id
 
-                mensagem:
-                    "Usuário cadastrado!",
+        });
 
-                id:
-                    this.lastID
+    } catch (err) {
 
-            });
+        console.error(
+            "Erro ao cadastrar:",
+            err.message
+        );
 
-        }
-    );
+        res.status(500).json({
+            erro: err.message
+        });
+
+    }
 
 });
-
 
 // ========================================
 // EDITAR
 // ========================================
 
-app.put("/usuarios/:id", (req, res) => {
+app.put("/usuarios/:id", async (req, res) => {
 
-    const id =
-        req.params.id;
-
+    const id = req.params.id;
 
     const {
         nome,
         VALOR,
         HRDOBABA
     } = req.body;
-
 
     if (
         !nome ||
@@ -238,111 +242,115 @@ app.put("/usuarios/:id", (req, res) => {
 
     }
 
+    try {
 
-    db.run(
-        `
-        UPDATE usuarios
+        const resultado = await pool.query(
+            `
+            UPDATE baba_usuarios
 
-        SET
-            nome = ?,
-            VALOR = ?,
-            HRDOBABA = ?
+            SET
+                nome = $1,
+                valor = $2,
+                hrdobaba = $3
 
-        WHERE id = ?
-        `,
-        [
-            nome,
-            Number(VALOR),
-            HRDOBABA,
-            id
-        ],
-        function(err) {
+            WHERE id = $4
 
-            if (err) {
+            RETURNING id
+            `,
+            [
+                nome,
+                Number(VALOR),
+                HRDOBABA,
+                id
+            ]
+        );
 
-                return res.status(500).json({
-                    erro: err.message
-                });
+        if (resultado.rowCount === 0) {
 
-            }
+            return res.status(404).json({
 
-
-            if (this.changes === 0) {
-
-                return res.status(404).json({
-
-                    erro:
-                        "Usuário não encontrado."
-
-                });
-
-            }
-
-
-            res.json({
-
-                mensagem:
-                    "Usuário atualizado!"
+                erro:
+                    "Usuário não encontrado."
 
             });
 
         }
-    );
+
+        res.json({
+
+            mensagem:
+                "Usuário atualizado!"
+
+        });
+
+    } catch (err) {
+
+        console.error(
+            "Erro ao editar:",
+            err.message
+        );
+
+        res.status(500).json({
+            erro: err.message
+        });
+
+    }
 
 });
-
 
 // ========================================
 // EXCLUIR
 // ========================================
 
-app.delete("/usuarios/:id", (req, res) => {
+app.delete("/usuarios/:id", async (req, res) => {
 
-    const id =
-        req.params.id;
+    const id = req.params.id;
 
+    try {
 
-    db.run(
-        `
-        DELETE FROM usuarios
-        WHERE id = ?
-        `,
-        [id],
-        function(err) {
+        const resultado = await pool.query(
+            `
+            DELETE FROM baba_usuarios
 
-            if (err) {
+            WHERE id = $1
 
-                return res.status(500).json({
-                    erro: err.message
-                });
+            RETURNING id
+            `,
+            [id]
+        );
 
-            }
+        if (resultado.rowCount === 0) {
 
+            return res.status(404).json({
 
-            if (this.changes === 0) {
-
-                return res.status(404).json({
-
-                    erro:
-                        "Usuário não encontrado."
-
-                });
-
-            }
-
-
-            res.json({
-
-                mensagem:
-                    "Usuário excluído!"
+                erro:
+                    "Usuário não encontrado."
 
             });
 
         }
-    );
+
+        res.json({
+
+            mensagem:
+                "Usuário excluído!"
+
+        });
+
+    } catch (err) {
+
+        console.error(
+            "Erro ao excluir:",
+            err.message
+        );
+
+        res.status(500).json({
+            erro: err.message
+        });
+
+    }
 
 });
-
 
 // ========================================
 // SERVIDOR
